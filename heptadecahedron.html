@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Heptadecahedron</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100dvh;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+    <script>
+      // 创建场景
+      const scene = new THREE.Scene()
+
+      // 创建相机
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      )
+      camera.position.z = 10
+
+      // 创建渲染器
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+      renderer.setSize(window.innerWidth, window.innerHeight, false)
+      renderer.setClearColor(0x000000, 0) // 设置背景色为透明
+      document.body.appendChild(renderer.domElement)
+
+      // 创建17面体的几何体
+      const geometry = new THREE.IcosahedronGeometry(3, 0)
+
+      // 创建面的材质
+      const faceMaterial = new THREE.MeshBasicMaterial({ color: 0xddf4ff })
+
+      // 创建边的材质
+      const edgeMaterial = new THREE.LineBasicMaterial({ color: 0xddf4ff }) // 将边的颜色设置为紫色
+
+      // 创建面对象
+      const icosahedron = new THREE.Mesh(geometry, faceMaterial)
+
+      // 创建边线对象
+      const edges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geometry),
+        edgeMaterial
+      )
+
+      // 将面和边添加到组中
+      const group = new THREE.Group()
+      group.add(icosahedron)
+      group.add(edges)
+
+      // 将组添加到场景中
+      scene.add(group)
+
+      // 控制红色流光效果的顶点索引
+      let redCurrentVertexIndex = 0
+      let redElapsedTime = 0
+
+      // 控制绿色流光效果的顶点索引
+      let greenCurrentVertexIndex = 0
+      let greenElapsedTime = 0
+
+      // 创建红色流光效果的几何体
+      const redLightGeometry = new THREE.Geometry()
+
+      // 创建红色流光效果的线条对象
+      const redLightLine = new THREE.Line(
+        redLightGeometry,
+        edgeMaterial.clone() // 克隆边的材质，确保每条流光都有自己的颜色
+      )
+      redLightLine.frustumCulled = false // 禁用裁剪，以确保线条在场景中可见
+
+      // 将红色流光效果添加到组中
+      group.add(redLightLine)
+
+      // 创建绿色流光效果的几何体
+      const greenLightGeometry = new THREE.Geometry()
+
+      // 创建绿色流光效果的线条对象
+      const greenLightLine = new THREE.Line(
+        greenLightGeometry,
+        new THREE.LineBasicMaterial({ color: 0xddf4ff }) // 使用绿色材质
+      )
+      greenLightLine.frustumCulled = false // 禁用裁剪，以确保线条在场景中可见
+
+      // 将绿色流光效果添加到组中
+      group.add(greenLightLine)
+
+      // 渲染循环中更新旋转和流光效果
+      function animate() {
+        requestAnimationFrame(animate)
+
+        // 旋转组
+        group.rotation.x += 0.01
+        group.rotation.y += 0.01
+
+        // 更新红色流光效果的位置和颜色
+        const redVertexA = geometry.vertices[redCurrentVertexIndex]
+        const redVertexB =
+          geometry.vertices[
+            (redCurrentVertexIndex + 1) % geometry.vertices.length
+          ]
+        const redProgress = Math.min(redElapsedTime / 0.5, 1)
+
+        redLightGeometry.vertices[0] = redVertexA.clone()
+        redLightGeometry.vertices[1] = redVertexA
+          .clone()
+          .lerp(redVertexB, redProgress)
+        redLightGeometry.verticesNeedUpdate = true // 更新线条顶点位置
+
+        // 设置红色流光颜色为红色
+        edgeMaterial.color.setRGB(1, 1, 1) // 设置边的颜色为紫色
+
+        // 增加红色流光动画时间
+        redElapsedTime += 0.016 // 以约60fps的帧率计算
+
+        // 当红色流光动画完成后，更新红色顶点索引和重置计时器
+        if (redElapsedTime >= 0.5) {
+          redCurrentVertexIndex =
+            (redCurrentVertexIndex + 1) % geometry.vertices.length
+          redElapsedTime = 0
+        }
+
+        // 更新绿色流光效果的位置和颜色
+        const greenVertexA = geometry.vertices[greenCurrentVertexIndex]
+        const greenVertexB =
+          geometry.vertices[
+            (greenCurrentVertexIndex + 1) % geometry.vertices.length
+          ]
+        const greenProgress = Math.min(greenElapsedTime / 0.5, 1)
+
+        greenLightGeometry.vertices[0] = greenVertexA.clone()
+        greenLightGeometry.vertices[1] = greenVertexA
+          .clone()
+          .lerp(greenVertexB, greenProgress)
+        greenLightGeometry.verticesNeedUpdate = true // 更新线条顶点位置
+
+        // 设置绿色流光颜色为绿色
+        greenLightLine.material.color.setRGB(0, 1, 1) // 设置绿色流光颜色为蓝色
+
+        // 增加绿色流光动画时间
+        greenElapsedTime += 0.016 // 以约60fps的帧率计算
+
+        // 当绿色流光动画完成后，更新绿色顶点索引和重置计时器
+        if (greenElapsedTime >= 0.5) {
+          greenCurrentVertexIndex =
+            (greenCurrentVertexIndex + 1) % geometry.vertices.length
+          greenElapsedTime = 0
+        }
+
+        // 渲染场景
+        renderer.render(scene, camera)
+      }
+
+      animate()
+    </script>
+  </body>
+</html>
